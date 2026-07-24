@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/classical-37179593-bac7-4e46-81d6-e9685f857ce7/styles.css">
+<style>
+  html,body{height:100%}
+  .seat-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
+  .chip:active{cursor:grabbing}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;height:100vh;background:var(--color-bg);color:var(--color-text)">
+
+  <div class="nav" style="flex:none">
+    <span class="nav-brand">Plan Sali Weselnej</span>
+    <div style="display:flex;align-items:center;gap:var(--space-4);font-size:13px" class="text-muted">
+      <span>Usadzeni: <strong style="color:var(--color-text)">{{ seated }}</strong> / {{ total }}</span>
+      <span>Nieusadzeni: <strong style="color:var(--color-text)">{{ unassignedCount }}</strong></span>
+    </div>
+  </div>
+
+  <div style="flex:1;display:flex;min-height:0">
+
+    <aside style="flex:none;width:308px;border-right:1px solid var(--color-divider);padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-3);overflow:auto">
+      <div>
+        <h4 style="margin-bottom:var(--space-2)">Lista gości</h4>
+        <div class="field">
+          <label>Wklej imiona — jedno w wierszu (lub po przecinku)</label>
+          <textarea class="input" placeholder="Anna Kowalska&#10;Jan Nowak&#10;Maria Wiśniewska…" value="{{ guestText }}" onInput="{{ setGuestText }}" style="min-height:120px"></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" onClick="{{ addGuests }}">Dodaj gości</button>
+      </div>
+
+      <hr class="hr" style="margin:var(--space-2) 0">
+
+      <div style="display:flex;align-items:baseline;justify-content:space-between">
+        <h4 style="margin:0">Nieusadzeni</h4>
+        <span class="tag tag-neutral">{{ unassignedCount }}</span>
+      </div>
+      <p class="text-muted" style="font-size:12px;margin:0">Przeciągnij gościa na krzesło. Aby zwolnić miejsce, upuść tutaj lub kliknij zajęte krzesło.</p>
+
+      <div onDragOver="{{ onListOver }}" onDrop="{{ onListDrop }}" style="flex:1;min-height:120px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:var(--space-2);padding:var(--space-2);border:1.5px dashed var(--color-divider);border-radius:var(--radius-md)">
+        <sc-for list="{{ unassigned }}" as="g" hint-placeholder-count="6">
+          <div class="chip" draggable="true" onDragStart="{{ g.onDragStart }}" title="{{ g.name }}" style="cursor:grab;user-select:none;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;font-size:13px;background:var(--color-surface);border:1px solid var(--color-divider);border-radius:999px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.5"><circle cx="9" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>
+            <span>{{ g.name }}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noUnassigned }}" hint-placeholder-val="{{ false }}">
+          <span class="text-muted" style="font-size:12px;font-style:italic">Wszyscy goście usadzeni.</span>
+        </sc-if>
+      </div>
+    </aside>
+
+    <section style="flex:1;display:flex;flex-direction:column;min-width:0">
+
+      <div style="flex:none;display:flex;align-items:flex-end;gap:var(--space-4);flex-wrap:wrap;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-divider)">
+        <div class="field" style="display:flex;align-items:flex-end;gap:var(--space-2);margin:0">
+          <div>
+            <label>Miejsca</label>
+            <input class="input" type="number" min="1" max="40" value="{{ roundSeats }}" onInput="{{ setRoundSeats }}" style="width:70px">
+          </div>
+          <button class="btn btn-secondary" onClick="{{ addRound }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"></circle></svg>
+            Stół okrągły
+          </button>
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end;gap:var(--space-2);margin:0">
+          <div>
+            <label>Miejsca</label>
+            <input class="input" type="number" min="1" max="40" value="{{ rectSeats }}" onInput="{{ setRectSeats }}" style="width:70px">
+          </div>
+          <button class="btn btn-secondary" onClick="{{ addRect }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="18" height="10" rx="1"></rect></svg>
+            Stół podłużny
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-accent-2-700)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 12h.01"></path><path d="M15 12h.01"></path><path d="M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5"></path><path d="M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1"></path></svg>
+          krzesełka dziecięce dodajesz przyciskiem na stole
+        </div>
+        <div style="margin-left:auto;display:flex;gap:var(--space-2)">
+          <button class="btn btn-ghost" onClick="{{ clearAll }}">Wyczyść plan</button>
+        </div>
+      </div>
+
+      <div ref="{{ setCanvasRef }}" style="flex:1;position:relative;overflow:auto;background-color:var(--color-bg);background-image:radial-gradient(var(--color-divider) 1px, transparent 1px);background-size:26px 26px">
+        <div style="position:relative;min-width:1400px;min-height:1000px">
+
+          <sc-if value="{{ noTables }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:80px;left:0;right:0;text-align:center;pointer-events:none">
+              <h3 class="text-muted" style="font-weight:400">Plan sali jest pusty</h3>
+              <p class="text-muted" style="font-size:14px">Dodaj stół okrągły lub podłużny za pomocą przycisków powyżej, a następnie przeciągaj gości na krzesła.</p>
+            </div>
+          </sc-if>
+
+          <sc-for list="{{ tables }}" as="t" hint-placeholder-count="0">
+            <div style="{{ t.nodeStyle }}">
+              <div onMouseDown="{{ t.onGripDown }}" style="{{ t.headStyle }}">
+                <span style="display:inline-flex;align-items:center;gap:4px;cursor:move;color:var(--color-neutral-600)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="18" r="1"></circle><circle cx="15" cy="6" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="18" r="1"></circle></svg>
+                  przeciągnij
+                </span>
+                <div style="display:flex;align-items:center;gap:3px">
+                  <button class="btn btn-icon" onClick="{{ t.onAddHighChair }}" title="Dodaj krzesełko dziecięce" style="width:26px;height:26px;color:var(--color-accent-2-700)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 12h.01"></path><path d="M15 12h.01"></path><path d="M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5"></path><path d="M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1"></path></svg>
+                  </button>
+                  <sc-if value="{{ t.hasHighChairs }}" hint-placeholder-val="{{ false }}">
+                    <button class="btn btn-icon" onClick="{{ t.onRemoveHighChair }}" title="Usuń ostatnie krzesełko dziecięce" style="width:26px;height:26px;color:var(--color-neutral-600)">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14"></path></svg>
+                    </button>
+                  </sc-if>
+                  <button class="btn btn-icon" onClick="{{ t.onRemove }}" title="Usuń stół" style="width:26px;height:26px;color:var(--color-neutral-600)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div style="{{ t.areaStyle }}">
+                <div style="{{ t.tableStyle }}">
+                  <sc-if value="{{ t.editing }}" hint-placeholder-val="{{ false }}">
+                    <input class="input" value="{{ t.name }}" onInput="{{ t.onNameInput }}" onBlur="{{ t.commitEdit }}" onKeyDown="{{ t.onNameKey }}" style="width:80%;text-align:center;font-family:var(--font-heading)">
+                  </sc-if>
+                  <sc-if value="{{ t.notEditing }}" hint-placeholder-val="{{ true }}">
+                    <div style="text-align:center;padding:6px;cursor:text" onClick="{{ t.startEdit }}" title="Kliknij, aby zmienić nazwę">
+                      <div style="font-family:var(--font-heading);font-weight:600;font-size:16px;line-height:1.1">{{ t.name }}</div>
+                      <sc-if value="{{ t.showCount }}" hint-placeholder-val="{{ true }}">
+                        <div class="text-muted" style="font-size:11px;font-variant-numeric:tabular-nums">{{ t.centerLabel }}</div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+
+                <sc-for list="{{ t.seatViews }}" as="seat" hint-placeholder-count="0">
+                  <div draggable="{{ seat.draggable }}" onDragStart="{{ seat.onDragStart }}" onDragOver="{{ seat.onDragOver }}" onDrop="{{ seat.onDrop }}" onClick="{{ seat.onClick }}" title="{{ seat.title }}" style="{{ seat.style }}">
+                    <div style="{{ seat.innerStyle }}">
+                      <sc-if value="{{ seat.showBaby }}" hint-placeholder-val="{{ false }}">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 12h.01"></path><path d="M15 12h.01"></path><path d="M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5"></path><path d="M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1"></path></svg>
+                      </sc-if>
+                      <sc-if value="{{ seat.showLabel }}" hint-placeholder-val="{{ true }}">
+                        <span class="seat-name">{{ seat.label }}</span>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:760},&quot;showCounts&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Wygląd&quot;},&quot;snapToGrid&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Zachowanie&quot;},&quot;guestLabel&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;full&quot;,&quot;options&quot;:[&quot;full&quot;,&quot;first&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Wygląd&quot;}}">
+const uid = () => Math.random().toString(36).slice(2, 9);
+const clampInt = (v) => { let n = parseInt(v, 10); if (isNaN(n)) n = 1; return Math.max(1, Math.min(40, n)); };
+const SEAT = 56, HALF = 28, CHILD = 46, CHALF = 23, HC_BASE = 1000;
+
+class Component extends DCLogic {
+  state = { tables: [], guests: [], guestText: '', roundSeats: 8, rectSeats: 12, editingId: null };
+
+  componentDidMount() {
+    try { const s = JSON.parse(localStorage.getItem('wedding-seating-v1')); if (s && s.tables) this.setState(s); } catch (e) {}
+    this._move = (e) => {
+      if (!this.drag || !this.canvasEl) return;
+      const r = this.canvasEl.getBoundingClientRect();
+      let x = e.clientX - r.left + this.canvasEl.scrollLeft - this.drag.dx;
+      let y = e.clientY - r.top + this.canvasEl.scrollTop - this.drag.dy;
+      if ((this.props || {}).snapToGrid) { x = Math.round(x / 26) * 26; y = Math.round(y / 26) * 26; }
+      x = Math.max(0, x); y = Math.max(0, y);
+      this.setState(st => ({ tables: st.tables.map(t => t.id === this.drag.id ? { ...t, x, y } : t) }));
+    };
+    this._up = () => { this.drag = null; };
+    window.addEventListener('mousemove', this._move);
+    window.addEventListener('mouseup', this._up);
+  }
+  componentWillUnmount() { window.removeEventListener('mousemove', this._move); window.removeEventListener('mouseup', this._up); }
+  componentDidUpdate() {
+    const { tables, guests, guestText, roundSeats, rectSeats } = this.state;
+    try { localStorage.setItem('wedding-seating-v1', JSON.stringify({ tables, guests, guestText, roundSeats, rectSeats })); } catch (e) {}
+  }
+
+  roundGeom(n) {
+    n = Math.max(1, Math.min(60, parseInt(n, 10) || 1));
+    const tableR = Math.max(52, 20 + n * 5);
+    const ring = tableR + 42;
+    const size = (ring + HALF + 6) * 2;
+    const c = size / 2;
+    const seats = [];
+    for (let i = 0; i < n; i++) {
+      const a = (-90 + i * 360 / n) * Math.PI / 180;
+      seats.push({ left: c + ring * Math.cos(a) - HALF, top: c + ring * Math.sin(a) - HALF });
+    }
+    return { width: size, height: size, table: { left: c - tableR, top: c - tableR, width: tableR * 2, height: tableR * 2, borderRadius: '50%' }, seats };
+  }
+  rectGeom(n) {
+    n = Math.max(1, Math.min(60, parseInt(n, 10) || 1));
+    const slot = 64;
+    const topN = Math.ceil(n / 2), botN = n - topN;
+    const cols = Math.max(topN, botN, 1);
+    const tableW = cols * slot, tableH = 104, padY = SEAT + 14;
+    const width = tableW, height = tableH + padY * 2, tableTop = padY;
+    const seats = [];
+    const place = (k, rowTop) => { for (let i = 0; i < k; i++) { const cx = (tableW / k) * (i + 0.5); seats.push({ left: cx - HALF, top: rowTop }); } };
+    place(topN, tableTop - SEAT - 6);
+    place(botN, tableTop + tableH + 6);
+    return { width, height, table: { left: 0, top: tableTop, width: tableW, height: tableH, borderRadius: 6 }, seats };
+  }
+
+  startDrag(id, e) {
+    if (!this.canvasEl) return;
+    const r = this.canvasEl.getBoundingClientRect();
+    const t = this.state.tables.find(x => x.id === id);
+    this.drag = { id, dx: e.clientX - r.left + this.canvasEl.scrollLeft - t.x, dy: e.clientY - r.top + this.canvasEl.scrollTop - t.y };
+    e.preventDefault();
+  }
+  addTable(shape) {
+    const seats = shape === 'round' ? this.state.roundSeats : this.state.rectSeats;
+    this.setState(st => {
+      const n = st.tables.length;
+      return { tables: [...st.tables, { id: uid(), name: 'Stół ' + (n + 1), shape, seats: Math.max(1, seats), highChairs: 0, x: 40 + (n % 5) * 90, y: 40 + (n % 4) * 70 }] };
+    });
+  }
+  removeTable(id) { this.setState(st => ({ tables: st.tables.filter(t => t.id !== id), guests: st.guests.map(g => g.tableId === id ? { ...g, tableId: null, seatIndex: null } : g) })); }
+  rename(id, name) { this.setState(st => ({ tables: st.tables.map(t => t.id === id ? { ...t, name } : t) })); }
+  addHighChair(id) { this.setState(st => ({ tables: st.tables.map(t => t.id === id ? { ...t, highChairs: (t.highChairs || 0) + 1 } : t) })); }
+  removeHighChair(id) {
+    this.setState(st => {
+      const t = st.tables.find(x => x.id === id); const hc = (t && t.highChairs) || 0; if (hc <= 0) return {};
+      const si = HC_BASE + (hc - 1);
+      return {
+        tables: st.tables.map(x => x.id === id ? { ...x, highChairs: hc - 1 } : x),
+        guests: st.guests.map(g => (g.tableId === id && g.seatIndex === si) ? { ...g, tableId: null, seatIndex: null } : g),
+      };
+    });
+  }
+  addGuests() {
+    const names = this.state.guestText.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+    if (!names.length) return;
+    const add = names.map(n => ({ id: uid(), name: n, tableId: null, seatIndex: null }));
+    this.setState(st => ({ guests: [...st.guests, ...add], guestText: '' }));
+  }
+  assign(gid, tid, si) {
+    this.setState(st => {
+      const guests = st.guests.map(g => ({ ...g }));
+      const g = guests.find(x => x.id === gid); if (!g) return {};
+      const occ = guests.find(x => x.tableId === tid && x.seatIndex === si && x.id !== gid);
+      const oT = g.tableId, oS = g.seatIndex;
+      g.tableId = tid; g.seatIndex = si;
+      if (occ) { occ.tableId = oT; occ.seatIndex = oT != null ? oS : null; }
+      return { guests };
+    });
+  }
+  unassign(gid) { this.setState(st => ({ guests: st.guests.map(g => g.id === gid ? { ...g, tableId: null, seatIndex: null } : g) })); }
+
+  renderVals() {
+    const st = this.state;
+    const p = this.props || {};
+    const showCount = p.showCounts ?? true;
+    const firstOnly = (p.guestLabel ?? 'full') === 'first';
+    const fmt = (name) => firstOnly ? name.split(' ')[0] : name;
+    const byKey = {};
+    st.guests.forEach(g => { if (g.tableId != null) byKey[g.tableId + ':' + g.seatIndex] = g; });
+    const seated = st.guests.filter(g => g.tableId != null).length;
+
+    const emptyInner = { width: '100%', height: '100%', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', border: '1.5px dashed var(--color-divider)', color: 'var(--color-neutral-500)', fontSize: '12px', fontVariantNumeric: 'tabular-nums' };
+    const fullInner = { width: '100%', height: '100%', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '4px', background: 'var(--color-accent-100)', border: '1px solid var(--color-accent-400)', color: 'var(--color-accent-900)', fontSize: '10.5px', lineHeight: '1.12', cursor: 'grab' };
+    const childEmpty = { width: '100%', height: '100%', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-accent-2-100)', border: '1.5px dashed var(--color-accent-2-400)', color: 'var(--color-accent-2-700)' };
+    const childFull = { width: '100%', height: '100%', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '3px', background: 'var(--color-accent-2-100)', border: '1px solid var(--color-accent-2-500)', color: 'var(--color-accent-2-900)', fontSize: '9.5px', lineHeight: '1.1', cursor: 'grab' };
+
+    const tables = st.tables.map(t => {
+      const geom = t.shape === 'round' ? this.roundGeom(t.seats) : this.rectGeom(t.seats);
+      const cnt = st.guests.filter(g => g.tableId === t.id).length;
+      const mkSeat = (i, s, size, empty, full, child) => {
+        const g = byKey[t.id + ':' + i];
+        return {
+          key: t.id + ':' + i,
+          style: { position: 'absolute', left: s.left, top: s.top, width: size, height: size },
+          innerStyle: g ? full : empty,
+          label: g ? fmt(g.name) : (child ? '' : String(i + 1)),
+          showBaby: child && !g,
+          showLabel: !!g || !child,
+          title: g ? g.name + ' — kliknij, aby zwolnić' : (child ? 'Krzesełko dziecięce (puste) — przeciągnij dziecko tutaj' : 'Wolne miejsce ' + (i + 1)),
+          draggable: !!g,
+          onDragStart: g ? (e) => { this.dragGid = g.id; e.dataTransfer.setData('text/plain', g.id); e.dataTransfer.effectAllowed = 'move'; } : null,
+          onDragOver: (e) => e.preventDefault(),
+          onDrop: (e) => { e.preventDefault(); const id = e.dataTransfer.getData('text/plain') || this.dragGid; if (id) this.assign(id, t.id, i); this.dragGid = null; },
+          onClick: g ? () => this.unassign(g.id) : null,
+        };
+      };
+      const seatViews = geom.seats.map((s, i) => mkSeat(i, s, SEAT, emptyInner, fullInner, false));
+      const hc = t.highChairs || 0;
+      let areaH = geom.height;
+      if (hc > 0) {
+        const rowTop = geom.height + 12;
+        const totalW = hc * 58;
+        const startX = geom.width / 2 - totalW / 2 + (58 - CHILD) / 2;
+        for (let j = 0; j < hc; j++) {
+          seatViews.push(mkSeat(HC_BASE + j, { left: startX + j * 58, top: rowTop }, CHILD, childEmpty, childFull, true));
+        }
+        areaH = rowTop + CHILD + 6;
+      }
+      return {
+        id: t.id, name: t.name,
+        nodeStyle: { position: 'absolute', left: t.x, top: t.y },
+        headStyle: { width: geom.width, minWidth: 148, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px', cursor: 'move' },
+        areaStyle: { position: 'relative', width: geom.width, height: areaH },
+        tableStyle: Object.assign({ position: 'absolute', display: 'grid', placeItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-divider)', boxShadow: 'var(--shadow-sm)' }, geom.table),
+        seatViews,
+        editing: st.editingId === t.id,
+        notEditing: st.editingId !== t.id,
+        showCount,
+        centerLabel: cnt + ' / ' + t.seats + ' miejsc',
+        hasHighChairs: hc > 0,
+        onGripDown: (e) => this.startDrag(t.id, e),
+        onRemove: () => this.removeTable(t.id),
+        onAddHighChair: () => this.addHighChair(t.id),
+        onRemoveHighChair: () => this.removeHighChair(t.id),
+        startEdit: () => this.setState({ editingId: t.id }),
+        onNameInput: (e) => this.rename(t.id, e.target.value),
+        onNameKey: (e) => { if (e.key === 'Enter') this.setState({ editingId: null }); },
+        commitEdit: () => this.setState({ editingId: null }),
+      };
+    });
+
+    const unassigned = st.guests.filter(g => g.tableId == null).map(g => ({
+      id: g.id, name: g.name,
+      onDragStart: (e) => { this.dragGid = g.id; e.dataTransfer.setData('text/plain', g.id); e.dataTransfer.effectAllowed = 'move'; },
+    }));
+
+    return {
+      tables, unassigned,
+      unassignedCount: unassigned.length, total: st.guests.length, seated,
+      noUnassigned: st.guests.length > 0 && unassigned.length === 0,
+      noTables: st.tables.length === 0,
+      guestText: st.guestText,
+      setGuestText: (e) => this.setState({ guestText: e.target.value }),
+      addGuests: () => this.addGuests(),
+      roundSeats: st.roundSeats, rectSeats: st.rectSeats,
+      setRoundSeats: (e) => this.setState({ roundSeats: clampInt(e.target.value) }),
+      setRectSeats: (e) => this.setState({ rectSeats: clampInt(e.target.value) }),
+      addRound: () => this.addTable('round'),
+      addRect: () => this.addTable('rect'),
+      onListOver: (e) => e.preventDefault(),
+      onListDrop: (e) => { e.preventDefault(); const id = e.dataTransfer.getData('text/plain') || this.dragGid; if (id) this.unassign(id); this.dragGid = null; },
+      setCanvasRef: (el) => { this.canvasEl = el; },
+      clearAll: () => { if (confirm('Wyczyścić cały plan sali? Tej operacji nie można cofnąć.')) this.setState({ tables: [], guests: [], guestText: '', editingId: null }); },
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# TypeScript build artifacts
+*.tsbuildinfo
+app/vite.config.d.ts
