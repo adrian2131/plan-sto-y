@@ -11,11 +11,14 @@ const STORAGE_KEY = 'wedding-seating-v1'
 const GRID = 26
 
 const uid = () => Math.random().toString(36).slice(2, 9)
-const clampInt = (v: string | number) => {
+const clampInt = (v: string | number, max: number) => {
   let n = parseInt(String(v), 10)
   if (isNaN(n)) n = 1
-  return Math.max(1, Math.min(40, n))
+  return Math.max(1, Math.min(max, n))
 }
+// Maks. liczba miejsc: okrągły 12, podłużny 80
+const ROUND_MAX = 12
+const RECT_MAX = 80
 
 function loadInitial(): PersistedState {
   const fallback: PersistedState = { tables: [], guests: [], guestText: '', roundSeats: 8, rectSeats: 12 }
@@ -51,6 +54,7 @@ export default function App() {
 
   // Efemeryczne (poza stanem renderu)
   const canvasRef = useRef<HTMLDivElement | null>(null)
+  const planRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<{ id: string; dx: number; dy: number } | null>(null)
   const dragGid = useRef<string | null>(null)
   const snapRef = useRef(snapToGrid)
@@ -247,8 +251,83 @@ export default function App() {
     return m
   }, [guests])
 
+  // ── Eksport planu do PDF (wizualny zrzut kanwy) ─────────────────────
+  const [exporting, setExporting] = useState(false)
+  // Eksport przez natywny druk przeglądarki („Zapisz jako PDF"). Renderuje
+  // prawdziwymi fontami i z pełną wiernością CSS — bez bibliotek i rasteryzacji.
+  // Przed drukiem liczymy obrys treści, żeby zmieścić plan na stronie A4 poziomej
+  // i przyciąć puste marginesy kanwy.
+  const exportPdf = useCallback(() => {
+    const node = planRef.current
+    if (!node || tablesRef.current.length === 0) return
+    setExporting(true)
+
+    // Obrys wszystkich stołów (razem z krzesłami i paskiem nad blatem).
+    const base = node.getBoundingClientRect()
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    node.querySelectorAll<HTMLElement>('[data-table-node]').forEach((el) => {
+      const r = el.getBoundingClientRect()
+      minX = Math.min(minX, r.left - base.left)
+      minY = Math.min(minY, r.top - base.top)
+      maxX = Math.max(maxX, r.right - base.left)
+      maxY = Math.max(maxY, r.bottom - base.top)
+    })
+    if (!isFinite(minX)) {
+      setExporting(false)
+      return
+    }
+
+    const pad = 24
+    minX = Math.max(0, minX - pad)
+    minY = Math.max(0, minY - pad)
+    const contentW = maxX - minX + pad
+    const contentH = maxY - minY + pad
+
+    // A4 poziomo przy 96dpi ≈ 1122×794px; margines 10mm ≈ 38px, nagłówek ~64px.
+    const pageW = 1122 - 76
+    const pageH = 794 - 76 - 64
+    const scale = Math.min(pageW / contentW, pageH / contentH, 1)
+
+    const root = document.documentElement
+    root.style.setProperty('--print-x', `${-minX}px`)
+    root.style.setProperty('--print-y', `${-minY}px`)
+    root.style.setProperty('--print-scale', String(scale))
+    root.style.setProperty('--print-w', `${contentW}px`)
+    root.style.setProperty('--print-h', `${contentH}px`)
+    document.body.classList.add('printing')
+
+    const cleanup = () => {
+      document.body.classList.remove('printing')
+      setExporting(false)
+      window.removeEventListener('afterprint', cleanup)
+    }
+    window.addEventListener('afterprint', cleanup)
+
+    // Pozwól przeglądarce zastosować style wydruku przed otwarciem okna.
+    // setTimeout, nie requestAnimationFrame — rAF nie odpala się w karcie w tle.
+    window.setTimeout(() => {
+      try {
+        window.print()
+      } finally {
+        // Fallback: część przeglądarek nie emituje afterprint.
+        window.setTimeout(cleanup, 500)
+      }
+    }, 50)
+  }, [])
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--color-bg)', color: 'var(--color-text)' }}>
+      {/* Nagłówek widoczny wyłącznie na wydruku / w PDF */}
+      <div className="print-header">
+        <h2 style={{ margin: 0, fontSize: 22 }}>Plan Sali Weselnej</h2>
+        <div style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
+          Usadzeni: {seated} / {guests.length} · Nieusadzeni: {unassigned.length}
+        </div>
+      </div>
+
       {/* Górny pasek */}
       <div className="nav" style={{ flex: 'none' }}>
         <span className="nav-brand">Plan Sali Weselnej</span>
@@ -262,7 +341,7 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+      <div className="app-shell" style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         <Sidebar
           guestText={guestText}
           setGuestText={setGuestText}
@@ -273,21 +352,27 @@ export default function App() {
           onListDrop={onListDrop}
         />
 
-        <section style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <section className="plan-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <Toolbar
             roundSeats={roundSeats}
             rectSeats={rectSeats}
-            setRoundSeats={(v) => setRoundSeats(clampInt(v))}
-            setRectSeats={(v) => setRectSeats(clampInt(v))}
+            roundMax={ROUND_MAX}
+            rectMax={RECT_MAX}
+            setRoundSeats={(v) => setRoundSeats(clampInt(v, ROUND_MAX))}
+            setRectSeats={(v) => setRectSeats(clampInt(v, RECT_MAX))}
             addRound={() => addTable('round')}
             addRect={() => addTable('rect')}
             snapToGrid={snapToGrid}
             setSnapToGrid={setSnapToGrid}
+            exportPdf={exportPdf}
+            canExport={tables.length > 0 && !exporting}
+            exporting={exporting}
             clearAll={() => setShowClearConfirm(true)}
           />
 
           <div
             ref={canvasRef}
+            className="canvas-scroll"
             style={{
               flex: 1,
               position: 'relative',
@@ -297,7 +382,7 @@ export default function App() {
               backgroundSize: `${GRID}px ${GRID}px`,
             }}
           >
-            <div style={{ position: 'relative', minWidth: 1400, minHeight: 1000 }}>
+            <div ref={planRef} className="plan-surface" style={{ position: 'relative', minWidth: 1400, minHeight: 1000 }}>
               {tables.length === 0 && (
                 <div style={{ position: 'absolute', top: 80, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none' }}>
                   <h3 className="text-muted" style={{ fontWeight: 400 }}>

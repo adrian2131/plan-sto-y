@@ -1,30 +1,41 @@
-import { Circle, RectangleHorizontal, Baby } from 'lucide-react'
+import { Circle, RectangleHorizontal, Baby, Download } from 'lucide-react'
 
 interface ToolbarProps {
   roundSeats: number
   rectSeats: number
+  roundMax: number
+  rectMax: number
   setRoundSeats: (v: string) => void
   setRectSeats: (v: string) => void
   addRound: () => void
   addRect: () => void
   snapToGrid: boolean
   setSnapToGrid: (v: boolean) => void
+  exportPdf: () => void
+  canExport: boolean
+  exporting: boolean
   clearAll: () => void
 }
 
 export default function Toolbar({
   roundSeats,
   rectSeats,
+  roundMax,
+  rectMax,
   setRoundSeats,
   setRectSeats,
   addRound,
   addRect,
   snapToGrid,
   setSnapToGrid,
+  exportPdf,
+  canExport,
+  exporting,
   clearAll,
 }: ToolbarProps) {
   return (
     <div
+      className="toolbar"
       style={{
         flex: 'none',
         display: 'flex',
@@ -42,7 +53,7 @@ export default function Toolbar({
             className="input"
             type="number"
             min={1}
-            max={40}
+            max={roundMax}
             value={roundSeats}
             onChange={(e) => setRoundSeats(e.target.value)}
             style={{ width: 70 }}
@@ -61,7 +72,7 @@ export default function Toolbar({
             className="input"
             type="number"
             min={1}
-            max={40}
+            max={rectMax}
             value={rectSeats}
             onChange={(e) => setRectSeats(e.target.value)}
             style={{ width: 70 }}
@@ -84,6 +95,15 @@ export default function Toolbar({
           <span className="dot" style={{ borderRadius: 'var(--radius-sm)' }} />
           Przyciągaj do siatki
         </label>
+        <button
+          className="btn btn-secondary"
+          onClick={exportPdf}
+          disabled={!canExport}
+          title={'Eksportuj plan sali do PDF — w oknie drukowania wybierz „Zapisz jako PDF”'}
+        >
+          <Download size={16} strokeWidth={1.6} />
+          {exporting ? 'Przygotowuję…' : 'Eksportuj PDF'}
+        </button>
         <button className="btn btn-ghost" onClick={clearAll}>
           Wyczyść plan
         </button>

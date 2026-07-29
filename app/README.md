@@ -22,8 +22,8 @@ npm run preview  # podgląd builda
 
 - **Lista gości** — wklej imiona (dzielenie po nowej linii, przecinku, średniku);
   każdy wpis trafia do „nieusadzonych” jako przeciągalny chip.
-- **Stoły** — okrągłe i podłużne z liczbą miejsc 1–40; krzesła rozmieszczane
-  automatycznie wokół blatu (okrąg / dwa rzędy).
+- **Stoły** — okrągłe (1–12 miejsc) i podłużne (1–80 miejsc); krzesła
+  rozmieszczane automatycznie wokół blatu (okrąg / dwa rzędy).
 - **Krzesełka dziecięce** — przycisk `baby` na stole dodaje krzesełko (cieplejszy
   odcień akcentu, mniejsze kółko, ikona `baby`); minus usuwa ostatnie.
 - **Drag & drop** — przeciąganie gości na krzesła (natywny HTML5 DnD); upuszczenie
@@ -34,6 +34,10 @@ npm run preview  # podgląd builda
 - **Edycja** — nazwa stołu edytowana inline (Enter / blur), usuwanie stołu (goście
   wracają do nieusadzonych), licznik usadzonych/nieusadzonych, „Wyczyść plan”
   z potwierdzeniem.
+- **Eksport PDF** — przycisk „Eksportuj PDF" przygotowuje plan do druku
+  (przycięty do treści, skalowany na A4 poziomo, z nagłówkiem i statystykami)
+  i otwiera okno drukowania; w nim wybierz „Zapisz jako PDF". Wykorzystuje
+  natywny druk przeglądarki, więc zachowuje prawdziwe fonty i polskie znaki.
 - **Persistencja** — cały stan zapisywany w `localStorage` pod kluczem
   `wedding-seating-v1`, wczytywany przy starcie.
 

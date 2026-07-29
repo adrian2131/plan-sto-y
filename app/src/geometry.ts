@@ -26,9 +26,9 @@ export interface Geometry {
   seats: SeatPos[]
 }
 
-/** seats clampowane do 1..60 przed liczeniem geometrii (ochrona przed uszkodzonym stanem). */
+/** seats clampowane do 1..80 przed liczeniem geometrii (ochrona przed uszkodzonym stanem). */
 function clampSeats(n: number): number {
-  return Math.max(1, Math.min(60, parseInt(String(n), 10) || 1))
+  return Math.max(1, Math.min(80, parseInt(String(n), 10) || 1))
 }
 
 export function roundGeom(nRaw: number): Geometry {
