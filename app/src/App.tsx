@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar'
 import Toolbar from './components/Toolbar'
 import TableNode from './components/TableNode'
 import ConfirmDialog from './components/ConfirmDialog'
-import { HC_BASE } from './geometry'
+import { HC_BASE, ROUND_MAX, RECT_MAX, seatMaxFor } from './geometry'
 import type { Guest, PersistedState, Table, TableShape } from './types'
 
 const STORAGE_KEY = 'wedding-seating-v1'
@@ -16,9 +16,6 @@ const clampInt = (v: string | number, max: number) => {
   if (isNaN(n)) n = 1
   return Math.max(1, Math.min(max, n))
 }
-// Maks. liczba miejsc: okrągły 12, podłużny 80
-const ROUND_MAX = 12
-const RECT_MAX = 80
 
 function loadInitial(): PersistedState {
   const fallback: PersistedState = { tables: [], guests: [], guestText: '', roundSeats: 8, rectSeats: 12 }
@@ -170,6 +167,7 @@ export default function App() {
             shape,
             seats: Math.max(1, seats),
             highChairs: 0,
+            rotation: 0,
             x: 40 + (n % 5) * 90,
             y: 40 + (n % 4) * 70,
           },
@@ -186,6 +184,29 @@ export default function App() {
 
   const rename = useCallback((id: string, name: string) => {
     setTables((ts) => ts.map((t) => (t.id === id ? { ...t, name } : t)))
+  }, [])
+
+  // Dodaj / usuń zwykłe krzesło istniejącemu stołowi (dopasowanie liczby miejsc
+  // już po utworzeniu). Usuwane jest ostatnie miejsce; jeśli było zajęte —
+  // gość wraca do nieusadzonych.
+  const addSeat = useCallback((id: string) => {
+    setTables((ts) =>
+      ts.map((t) => (t.id === id ? { ...t, seats: Math.min(seatMaxFor(t.shape), t.seats + 1) } : t)),
+    )
+  }, [])
+
+  const removeSeat = useCallback((id: string) => {
+    const t = tablesRef.current.find((x) => x.id === id)
+    if (!t || t.seats <= 1) return
+    const removedIndex = t.seats - 1
+    setTables((ts) => ts.map((x) => (x.id === id ? { ...x, seats: x.seats - 1 } : x)))
+    setGuests((gs) =>
+      gs.map((g) => (g.tableId === id && g.seatIndex === removedIndex ? { ...g, tableId: null, seatIndex: null } : g)),
+    )
+  }, [])
+
+  const rotateTable = useCallback((id: string) => {
+    setTables((ts) => ts.map((t) => (t.id === id ? { ...t, rotation: (((t.rotation ?? 0) + 90) % 360) } : t)))
   }, [])
 
   const addHighChair = useCallback((id: string) => {
@@ -456,6 +477,10 @@ export default function App() {
                   seatedCount={seatedByTable.get(t.id) || 0}
                   editing={editingId === t.id}
                   onGripDown={(e) => startDrag(t.id, e)}
+                  seatMax={t.shape === 'round' ? ROUND_MAX : RECT_MAX}
+                  onAddSeat={() => addSeat(t.id)}
+                  onRemoveSeat={() => removeSeat(t.id)}
+                  onRotate={() => rotateTable(t.id)}
                   onAddHighChair={() => addHighChair(t.id)}
                   onRemoveHighChair={() => removeHighChair(t.id)}
                   onRemove={() => removeTable(t.id)}

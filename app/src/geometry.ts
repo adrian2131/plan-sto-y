@@ -6,6 +6,15 @@ export const HALF = 28
 export const CHILD = 46
 export const HC_BASE = 1000
 
+// Maks. liczba miejsc: stół okrągły 12, podłużny 80.
+export const ROUND_MAX = 12
+export const RECT_MAX = 80
+
+/** Limit miejsc dla danego kształtu stołu. */
+export function seatMaxFor(shape: TableShape): number {
+  return shape === 'round' ? ROUND_MAX : RECT_MAX
+}
+
 export interface SeatPos {
   left: number
   top: number
@@ -81,4 +90,36 @@ export function rectGeom(nRaw: number): Geometry {
 
 export function geomFor(shape: TableShape, seats: number): Geometry {
   return shape === 'round' ? roundGeom(seats) : rectGeom(seats)
+}
+
+/**
+ * Obraca geometrię o wielokrotność 90°. Obracane są tylko WSPÓŁRZĘDNE
+ * (środki krzeseł i blatu) oraz wymiary obszaru — same kafelki krzeseł nie są
+ * obracane w CSS, więc numery i imiona pozostają pionowo, czytelne.
+ */
+export function rotateGeom(g: Geometry, rotation: number): Geometry {
+  const r = (((rotation || 0) % 360) + 360) % 360
+  if (r === 0) return g
+  const W = g.width
+  const H = g.height
+  const swap = r === 90 || r === 270
+  const rot = (x: number, y: number): [number, number] => {
+    if (r === 90) return [H - y, x]
+    if (r === 180) return [W - x, H - y]
+    return [y, W - x] // 270
+  }
+  const seats: SeatPos[] = g.seats.map((s) => {
+    const [ncx, ncy] = rot(s.left + HALF, s.top + HALF)
+    return { left: ncx - HALF, top: ncy - HALF }
+  })
+  const t = g.table
+  const [ntcx, ntcy] = rot(t.left + t.width / 2, t.top + t.height / 2)
+  const ntW = swap ? t.height : t.width
+  const ntH = swap ? t.width : t.height
+  return {
+    width: swap ? H : W,
+    height: swap ? W : H,
+    table: { left: ntcx - ntW / 2, top: ntcy - ntH / 2, width: ntW, height: ntH, borderRadius: t.borderRadius },
+    seats,
+  }
 }

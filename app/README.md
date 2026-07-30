@@ -23,7 +23,10 @@ npm run preview  # podgląd builda
 - **Lista gości** — wklej imiona (dzielenie po nowej linii, przecinku, średniku);
   każdy wpis trafia do „nieusadzonych” jako przeciągalny chip.
 - **Stoły** — okrągłe (1–12 miejsc) i podłużne (1–80 miejsc); krzesła
-  rozmieszczane automatycznie wokół blatu (okrąg / dwa rzędy).
+  rozmieszczane automatycznie wokół blatu (okrąg / dwa rzędy). Liczbę miejsc
+  istniejącego stołu zmieniasz przyciskami krzesło + / − na jego pasku.
+  Stoły podłużne można obracać o 90° (przycisk obrotu) — pozycje krzeseł się
+  obracają, ale numery i imiona zostają pionowo, czytelne.
 - **Krzesełka dziecięce** — przycisk `baby` na stole dodaje krzesełko (cieplejszy
   odcień akcentu, mniejsze kółko, ikona `baby`); minus usuwa ostatnie.
 - **Drag & drop** — przeciąganie gości na krzesła (natywny HTML5 DnD); upuszczenie

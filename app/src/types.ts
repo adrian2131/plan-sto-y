@@ -8,6 +8,8 @@ export interface Table {
   highChairs: number
   x: number
   y: number
+  /** Obrót blatu w stopniach: 0 | 90 | 180 | 270. Brak = 0 (starsze zapisy). */
+  rotation?: number
 }
 
 export interface Guest {

@@ -1,14 +1,18 @@
 import type { CSSProperties, DragEvent, MouseEvent } from 'react'
-import { GripVertical, Baby, Minus, Trash2 } from 'lucide-react'
+import { GripVertical, Baby, Minus, Trash2, UserPlus, UserMinus, RotateCw } from 'lucide-react'
 import type { Guest, Table } from '../types'
-import { geomFor, SEAT, CHILD, HC_BASE } from '../geometry'
+import { geomFor, rotateGeom, SEAT, CHILD, HC_BASE } from '../geometry'
 
 interface TableNodeProps {
   table: Table
   guestsByKey: Map<string, Guest>
   seatedCount: number
   editing: boolean
+  seatMax: number
   onGripDown: (e: MouseEvent) => void
+  onAddSeat: () => void
+  onRemoveSeat: () => void
+  onRotate: () => void
   onAddHighChair: () => void
   onRemoveHighChair: () => void
   onRemove: () => void
@@ -85,7 +89,11 @@ export default function TableNode({
   guestsByKey,
   seatedCount,
   editing,
+  seatMax,
   onGripDown,
+  onAddSeat,
+  onRemoveSeat,
+  onRotate,
   onAddHighChair,
   onRemoveHighChair,
   onRemove,
@@ -96,7 +104,7 @@ export default function TableNode({
   onSeatDrop,
   onSeatClick,
 }: TableNodeProps) {
-  const geom = geomFor(t.shape, t.seats)
+  const geom = rotateGeom(geomFor(t.shape, t.seats), t.rotation ?? 0)
   const hc = t.highChairs || 0
 
   const mkSeat = (i: number, left: number, top: number, size: number, isChild: boolean): SeatView => {
@@ -160,6 +168,27 @@ export default function TableNode({
           <button
             className="btn btn-icon-sm"
             onMouseDown={(e) => e.stopPropagation()}
+            onClick={onRemoveSeat}
+            disabled={t.seats <= 1}
+            title="Usuń krzesło (ostatnie miejsce)"
+            style={{ color: 'var(--color-neutral-600)' }}
+          >
+            <UserMinus size={15} strokeWidth={1.6} />
+          </button>
+          <button
+            className="btn btn-icon-sm"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={onAddSeat}
+            disabled={t.seats >= seatMax}
+            title={t.seats >= seatMax ? `Maksymalnie ${seatMax} miejsc` : 'Dodaj krzesło'}
+            style={{ color: 'var(--color-accent-700)' }}
+          >
+            <UserPlus size={15} strokeWidth={1.6} />
+          </button>
+          <span aria-hidden style={{ width: 1, height: 16, background: 'var(--color-divider)', margin: '0 2px' }} />
+          <button
+            className="btn btn-icon-sm"
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={onAddHighChair}
             title="Dodaj krzesełko dziecięce"
             style={{ color: 'var(--color-accent-2-700)' }}
@@ -175,6 +204,17 @@ export default function TableNode({
               style={{ color: 'var(--color-neutral-600)' }}
             >
               <Minus size={15} strokeWidth={1.8} />
+            </button>
+          )}
+          {t.shape === 'rect' && (
+            <button
+              className="btn btn-icon-sm"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={onRotate}
+              title="Obróć stół o 90°"
+              style={{ color: 'var(--color-neutral-600)' }}
+            >
+              <RotateCw size={15} strokeWidth={1.6} />
             </button>
           )}
           <button
