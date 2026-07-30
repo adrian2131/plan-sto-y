@@ -38,6 +38,11 @@ npm run preview  # podgląd builda
   (przycięty do treści, skalowany na A4 poziomo, z nagłówkiem i statystykami)
   i otwiera okno drukowania; w nim wybierz „Zapisz jako PDF". Wykorzystuje
   natywny druk przeglądarki, więc zachowuje prawdziwe fonty i polskie znaki.
+- **Usuwanie gości** — każdy chip „nieusadzonego" ma przycisk ×, który
+  usuwa gościa z całej listy.
+- **Zapis / wczytanie z pliku** — „Zapisz" pobiera cały plan jako `.json`
+  (kopia poza przeglądarką, do przeniesienia na inne urządzenie), „Wczytaj"
+  wczytuje taki plik z powrotem.
 - **Persistencja** — cały stan zapisywany w `localStorage` pod kluczem
   `wedding-seating-v1`, wczytywany przy starcie.
 

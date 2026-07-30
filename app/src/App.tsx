@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { DragEvent, MouseEvent } from 'react'
+import type { ChangeEvent, DragEvent, MouseEvent } from 'react'
 import Sidebar from './components/Sidebar'
 import Toolbar from './components/Toolbar'
 import TableNode from './components/TableNode'
@@ -55,6 +55,7 @@ export default function App() {
   // Efemeryczne (poza stanem renderu)
   const canvasRef = useRef<HTMLDivElement | null>(null)
   const planRef = useRef<HTMLDivElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const dragRef = useRef<{ id: string; dx: number; dy: number } | null>(null)
   const dragGid = useRef<string | null>(null)
   const snapRef = useRef(snapToGrid)
@@ -206,6 +207,44 @@ export default function App() {
     setGuestText('')
     setEditingId(null)
     setShowClearConfirm(false)
+  }, [])
+
+  // ── Zapis / wczytanie planu z pliku (backup poza przeglądarką) ──────
+  const savePlan = useCallback(() => {
+    const slice: PersistedState = { tables, guests, guestText, roundSeats, rectSeats }
+    const blob = new Blob([JSON.stringify(slice, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `plan-sali-weselnej-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 0)
+  }, [tables, guests, guestText, roundSeats, rectSeats])
+
+  const triggerLoad = useCallback(() => fileInputRef.current?.click(), [])
+
+  const onLoadFile = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // pozwól wczytać ponownie ten sam plik
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const s = JSON.parse(String(reader.result))
+        if (!s || !Array.isArray(s.tables) || !Array.isArray(s.guests)) throw new Error('bad format')
+        setTables(s.tables)
+        setGuests(s.guests)
+        setGuestText(typeof s.guestText === 'string' ? s.guestText : '')
+        setRoundSeats(clampInt(s.roundSeats ?? 8, ROUND_MAX))
+        setRectSeats(clampInt(s.rectSeats ?? 12, RECT_MAX))
+        setEditingId(null)
+      } catch {
+        alert('Nie udało się wczytać pliku — to nie jest poprawny plik planu sali (.json).')
+      }
+    }
+    reader.readAsText(file)
   }, [])
 
   // ── Drag & drop gości ───────────────────────────────────────────────
@@ -372,7 +411,17 @@ export default function App() {
             exportPdf={exportPdf}
             canExport={tables.length > 0 && !exporting}
             exporting={exporting}
+            savePlan={savePlan}
+            canSave={tables.length > 0 || guests.length > 0}
+            loadPlan={triggerLoad}
             clearAll={() => setShowClearConfirm(true)}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={onLoadFile}
+            style={{ display: 'none' }}
           />
 
           <div

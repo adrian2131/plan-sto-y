@@ -1,4 +1,4 @@
-import { Circle, RectangleHorizontal, Baby, Download } from 'lucide-react'
+import { Circle, RectangleHorizontal, Baby, Download, Save, FolderOpen } from 'lucide-react'
 
 interface ToolbarProps {
   roundSeats: number
@@ -14,6 +14,9 @@ interface ToolbarProps {
   exportPdf: () => void
   canExport: boolean
   exporting: boolean
+  savePlan: () => void
+  canSave: boolean
+  loadPlan: () => void
   clearAll: () => void
 }
 
@@ -31,6 +34,9 @@ export default function Toolbar({
   exportPdf,
   canExport,
   exporting,
+  savePlan,
+  canSave,
+  loadPlan,
   clearAll,
 }: ToolbarProps) {
   return (
@@ -95,6 +101,23 @@ export default function Toolbar({
           <span className="dot" style={{ borderRadius: 'var(--radius-sm)' }} />
           Przyciągaj do siatki
         </label>
+        <button
+          className="btn btn-secondary"
+          onClick={loadPlan}
+          title="Wczytaj plan z pliku (.json)"
+        >
+          <FolderOpen size={16} strokeWidth={1.6} />
+          Wczytaj
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={savePlan}
+          disabled={!canSave}
+          title="Zapisz plan do pliku (.json) — kopia poza przeglądarką"
+        >
+          <Save size={16} strokeWidth={1.6} />
+          Zapisz
+        </button>
         <button
           className="btn btn-secondary"
           onClick={exportPdf}
