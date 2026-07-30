@@ -151,6 +151,10 @@ export default function App() {
     setGuests((gs) => gs.map((g) => (g.id === gid ? { ...g, tableId: null, seatIndex: null } : g)))
   }, [])
 
+  const removeGuest = useCallback((gid: string) => {
+    setGuests((gs) => gs.filter((g) => g.id !== gid))
+  }, [])
+
   // ── Stoły ───────────────────────────────────────────────────────────
   const addTable = useCallback(
     (shape: TableShape) => {
@@ -350,6 +354,7 @@ export default function App() {
           total={guests.length}
           onGuestDragStart={onGuestDragStart}
           onListDrop={onListDrop}
+          onRemoveGuest={removeGuest}
         />
 
         <section className="plan-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>

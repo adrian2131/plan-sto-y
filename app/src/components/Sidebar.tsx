@@ -1,5 +1,5 @@
 import type { DragEvent } from 'react'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, X } from 'lucide-react'
 import type { Guest } from '../types'
 
 interface SidebarProps {
@@ -10,6 +10,7 @@ interface SidebarProps {
   total: number
   onGuestDragStart: (gid: string, e: DragEvent) => void
   onListDrop: (e: DragEvent) => void
+  onRemoveGuest: (gid: string) => void
 }
 
 export default function Sidebar({
@@ -20,6 +21,7 @@ export default function Sidebar({
   total,
   onGuestDragStart,
   onListDrop,
+  onRemoveGuest,
 }: SidebarProps) {
   const noUnassigned = total > 0 && unassigned.length === 0
 
@@ -60,7 +62,7 @@ export default function Sidebar({
         <span className="tag tag-neutral">{unassigned.length}</span>
       </div>
       <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>
-        Przeciągnij gościa na krzesło. Aby zwolnić miejsce, upuść tutaj lub kliknij zajęte krzesło.
+        Przeciągnij gościa na krzesło. Aby zwolnić miejsce, upuść tutaj lub kliknij zajęte krzesło. Kliknij ×, aby usunąć gościa z listy.
       </p>
 
       <div
@@ -100,6 +102,20 @@ export default function Sidebar({
           >
             <GripVertical size={12} style={{ opacity: 0.5 }} />
             <span>{g.name}</span>
+            <button
+              type="button"
+              className="chip-remove"
+              title={`Usuń gościa: ${g.name}`}
+              aria-label={`Usuń gościa ${g.name}`}
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemoveGuest(g.id)
+              }}
+            >
+              <X size={13} strokeWidth={2} />
+            </button>
           </div>
         ))}
         {noUnassigned && (

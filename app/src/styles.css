@@ -325,3 +325,16 @@ html, body, #root { height: 100%; }
   /* Wymuś wierne kolory tła krzeseł i blatów */
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
+
+/* Przycisk usuwania gościa na chipie „nieusadzonych" */
+.chip-remove {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; margin: -2px -4px -2px 0; padding: 0;
+  border: 0; border-radius: 999px; background: transparent; cursor: pointer;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.chip-remove:hover {
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  color: var(--color-accent-700);
+}
+.chip-remove:active { background: color-mix(in srgb, var(--color-accent) 26%, transparent); }
