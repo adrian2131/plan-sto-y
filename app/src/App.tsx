@@ -315,83 +315,71 @@ export default function App() {
     return m
   }, [guests])
 
-  // ── Eksport planu do PDF (wizualny zrzut kanwy) ─────────────────────
+  // ── Eksport planu do PDF ────────────────────────────────────────────
   const [exporting, setExporting] = useState(false)
-  // Eksport przez natywny druk przeglądarki („Zapisz jako PDF"). Renderuje
-  // prawdziwymi fontami i z pełną wiernością CSS — bez bibliotek i rasteryzacji.
-  // Przed drukiem liczymy obrys treści, żeby zmieścić plan na stronie A4 poziomej
-  // i przyciąć puste marginesy kanwy.
-  const exportPdf = useCallback(() => {
-    const node = planRef.current
-    if (!node || tablesRef.current.length === 0) return
+  // Plan rysujemy bezpośrednio na canvasie (renderPlanCanvas) z tej samej
+  // geometrii co widok, więc eksport jest deterministyczny i szybki — bez
+  // rasteryzacji DOM (biblioteki html-to-image/html2canvas zawieszały się lub
+  // wywracały na color-mix()). Canvas → PNG → PDF, treść wypełnia stronę.
+  const exportPdf = useCallback(async () => {
+    if (tablesRef.current.length === 0) return
     setExporting(true)
-
-    // Obrys wszystkich stołów (razem z krzesłami i paskiem nad blatem).
-    const base = node.getBoundingClientRect()
-    let minX = Infinity
-    let minY = Infinity
-    let maxX = -Infinity
-    let maxY = -Infinity
-    node.querySelectorAll<HTMLElement>('[data-table-node]').forEach((el) => {
-      const r = el.getBoundingClientRect()
-      minX = Math.min(minX, r.left - base.left)
-      minY = Math.min(minY, r.top - base.top)
-      maxX = Math.max(maxX, r.right - base.left)
-      maxY = Math.max(maxY, r.bottom - base.top)
-    })
-    if (!isFinite(minX)) {
-      setExporting(false)
-      return
-    }
-
-    const pad = 24
-    minX = Math.max(0, minX - pad)
-    minY = Math.max(0, minY - pad)
-    const contentW = maxX - minX + pad
-    const contentH = maxY - minY + pad
-
-    // A4 poziomo przy 96dpi ≈ 1122×794px; margines 10mm ≈ 38px, nagłówek ~64px.
-    const pageW = 1122 - 76
-    const pageH = 794 - 76 - 64
-    const scale = Math.min(pageW / contentW, pageH / contentH, 1)
-
-    const root = document.documentElement
-    root.style.setProperty('--print-x', `${-minX}px`)
-    root.style.setProperty('--print-y', `${-minY}px`)
-    root.style.setProperty('--print-scale', String(scale))
-    root.style.setProperty('--print-w', `${contentW}px`)
-    root.style.setProperty('--print-h', `${contentH}px`)
-    document.body.classList.add('printing')
-
-    const cleanup = () => {
-      document.body.classList.remove('printing')
-      setExporting(false)
-      window.removeEventListener('afterprint', cleanup)
-    }
-    window.addEventListener('afterprint', cleanup)
-
-    // Pozwól przeglądarce zastosować style wydruku przed otwarciem okna.
-    // setTimeout, nie requestAnimationFrame — rAF nie odpala się w karcie w tle.
-    window.setTimeout(() => {
-      try {
-        window.print()
-      } finally {
-        // Fallback: część przeglądarek nie emituje afterprint.
-        window.setTimeout(cleanup, 500)
+    try {
+      const [{ renderPlanCanvas }, { jsPDF }] = await Promise.all([
+        import('./renderPlanCanvas'),
+        import('jspdf'),
+      ])
+      // Upewnij się, że fonty są wczytane, zanim canvas narysuje tekst.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready
+        } catch {
+          /* ignore */
+        }
       }
-    }, 50)
-  }, [])
+
+      const canvas = renderPlanCanvas(tables, guests)
+      if (!canvas) return
+      const cw = canvas.width
+      const ch = canvas.height
+      const dataUrl = canvas.toDataURL('image/png')
+
+      const landscape = cw >= ch
+      const pdf = new jsPDF({ orientation: landscape ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' })
+      const pageW = pdf.internal.pageSize.getWidth()
+      const pageH = pdf.internal.pageSize.getHeight()
+      const margin = 8
+      const headerH = 15
+
+      // Nagłówek — bez polskich diakrytyków (font PDF ich nie osadza; nazwa
+      // aplikacji i „Usadzeni/Nieusadzeni" są bez ogonków).
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(15)
+      pdf.text('Plan Sali Weselnej', margin, 10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(9)
+      pdf.setTextColor(90)
+      pdf.text(`Usadzeni: ${seated} / ${guests.length}    Nieusadzeni: ${unassigned.length}`, margin, 14)
+      pdf.setTextColor(0)
+
+      const availW = pageW - margin * 2
+      const availH = pageH - headerH - margin
+      const ratio = Math.min(availW / cw, availH / ch)
+      const imgW = cw * ratio
+      const imgH = ch * ratio
+      const x = margin + (availW - imgW) / 2
+      pdf.addImage(dataUrl, 'PNG', x, headerH, imgW, imgH)
+      pdf.save('plan-sali-weselnej.pdf')
+    } catch (err) {
+      console.error('Eksport PDF nie powiódł się:', err)
+      alert('Nie udało się wyeksportować PDF. Spróbuj ponownie.')
+    } finally {
+      setExporting(false)
+    }
+  }, [tables, guests, seated, unassigned.length])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--color-bg)', color: 'var(--color-text)' }}>
-      {/* Nagłówek widoczny wyłącznie na wydruku / w PDF */}
-      <div className="print-header">
-        <h2 style={{ margin: 0, fontSize: 22 }}>Plan Sali Weselnej</h2>
-        <div style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
-          Usadzeni: {seated} / {guests.length} · Nieusadzeni: {unassigned.length}
-        </div>
-      </div>
-
       {/* Górny pasek */}
       <div className="nav" style={{ flex: 'none' }}>
         <span className="nav-brand">Plan Sali Weselnej</span>

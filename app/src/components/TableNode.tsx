@@ -142,7 +142,7 @@ export default function TableNode({
   }
 
   return (
-    <div data-table-node style={{ position: 'absolute', left: t.x, top: t.y }}>
+    <div style={{ position: 'absolute', left: t.x, top: t.y }}>
       {/* Pasek stołu */}
       <div
         className="table-head"

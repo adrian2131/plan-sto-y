@@ -271,61 +271,6 @@ html, body, #root { height: 100%; }
 .btn-icon-sm:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
 .btn-icon-sm:active { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
 
-/* ── Wydruk / eksport do PDF ───────────────────────────────────────────
-   Przycisk „Eksportuj PDF" ustawia na <body> klasę .printing i zmienne
-   --print-* (obrys treści + skala), po czym wywołuje window.print().
-   Drukujemy sam plan sali: chrome aplikacji jest ukryty, a obszar planu
-   przesunięty i przeskalowany tak, by zmieścić się na stronie A4 poziomej. */
-.print-header { display: none; }
-
-@page {
-  size: A4 landscape;
-  margin: 10mm;
-}
-
-@media print {
-  html, body { height: auto; background: #fff; }
-  #root { display: block; height: auto; }
-
-  /* Ukryj interfejs — zostaje tylko plan i nagłówek wydruku */
-  .nav, aside, .toolbar, .dialog-backdrop { display: none !important; }
-
-  .print-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-4);
-    padding-bottom: var(--space-2);
-    margin-bottom: var(--space-3);
-    border-bottom: 1px solid var(--color-divider);
-  }
-
-  /* Rozwiń kontenery — bez przewijania i sztywnych wysokości */
-  .app-shell, .plan-section { display: block !important; height: auto !important; }
-  .canvas-scroll {
-    overflow: visible !important;
-    background-image: none !important;
-    height: auto !important;
-    flex: none !important;
-  }
-
-  /* Przytnij do treści i przeskaluj do strony */
-  .plan-surface {
-    min-width: 0 !important;
-    min-height: 0 !important;
-    width: var(--print-w) !important;
-    height: var(--print-h) !important;
-    transform: translate(var(--print-x), var(--print-y)) scale(var(--print-scale));
-    transform-origin: 0 0;
-  }
-
-  /* Elementy sterujące na stołach nie mają sensu na papierze */
-  .table-head { visibility: hidden !important; }
-
-  /* Wymuś wierne kolory tła krzeseł i blatów */
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-}
-
 /* Przycisk usuwania gościa na chipie „nieusadzonych" */
 .chip-remove {
   display: inline-flex; align-items: center; justify-content: center;

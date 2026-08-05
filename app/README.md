@@ -37,10 +37,12 @@ npm run preview  # podgląd builda
 - **Edycja** — nazwa stołu edytowana inline (Enter / blur), usuwanie stołu (goście
   wracają do nieusadzonych), licznik usadzonych/nieusadzonych, „Wyczyść plan”
   z potwierdzeniem.
-- **Eksport PDF** — przycisk „Eksportuj PDF" przygotowuje plan do druku
-  (przycięty do treści, skalowany na A4 poziomo, z nagłówkiem i statystykami)
-  i otwiera okno drukowania; w nim wybierz „Zapisz jako PDF". Wykorzystuje
-  natywny druk przeglądarki, więc zachowuje prawdziwe fonty i polskie znaki.
+- **Eksport PDF** — przycisk „Eksportuj PDF" rysuje plan na canvasie
+  (`renderPlanCanvas`, ta sama geometria co widok), przycina do obrysu stołów
+  i wkleja do PDF (A4, orientacja dobierana do proporcji, nagłówek ze
+  statystykami). Deterministyczne, bez rasteryzacji DOM — czytelne, z
+  poprawnymi polskimi znakami i zachowanym obrotem stołów. Plik pobiera się od
+  razu jako `plan-sali-weselnej.pdf`.
 - **Usuwanie gości** — każdy chip „nieusadzonego" ma przycisk ×, który
   usuwa gościa z całej listy.
 - **Zapis / wczytanie z pliku** — „Zapisz" pobiera cały plan jako `.json`
